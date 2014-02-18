@@ -26,65 +26,49 @@
 #include "board-shooter.h"
 
 #include <linux/mfd/pmic8058.h>
+
+/* Macros assume PMIC GPIOs start at 0 */
+#define PM8058_GPIO_BASE			NR_MSM_GPIOS
+#define PM8058_GPIO_PM_TO_SYS(pm_gpio)		(pm_gpio + PM8058_GPIO_BASE)
+#define PM8058_GPIO_SYS_TO_PM(sys_gpio)		(sys_gpio - PM8058_GPIO_BASE)
+#define PM8058_MPP_BASE			(PM8058_GPIO_BASE + PM8058_GPIOS)
+#define PM8058_MPP_PM_TO_SYS(pm_gpio)		(pm_gpio + PM8058_MPP_BASE)
+#define PM8058_MPP_SYS_TO_PM(sys_gpio)		(sys_gpio - PM8058_MPP_BASE)
+#define PM8058_IRQ_BASE				(NR_MSM_IRQS + NR_GPIO_IRQS)
+
+#define PM8901_GPIO_BASE			(PM8058_GPIO_BASE + \
+						PM8058_GPIOS + PM8058_MPPS)
+#define PM8901_GPIO_PM_TO_SYS(pm_gpio)		(pm_gpio + PM8901_GPIO_BASE)
+#define PM8901_GPIO_SYS_TO_PM(sys_gpio)		(sys_gpio - PM901_GPIO_BASE)
+#define PM8901_IRQ_BASE				(PM8058_IRQ_BASE + \
+						NR_PMIC8058_IRQS)
 static char *keycaps = "--qwerty";
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "board_shooter."
 module_param_named(keycaps, keycaps, charp, 0);
 
-static void config_gpio_table(uint32_t *table, int len)
-{
-	int n, rc;
-	for (n = 0; n < len; n++) {
-		rc = gpio_tlmm_config(table[n], GPIO_CFG_ENABLE);
-		if (rc) {
-			pr_err("[keypad]%s: gpio_tlmm_config(%#x)=%d\n",
-				__func__, table[n], rc);
-			break;
-		}
-	}
-}
-
 static struct gpio_event_direct_entry shooter_keypad_input_map[] = {
 	{
-		.gpio = SHOOTER_GPIO_KEY_POWER,
-		.code = KEY_POWER,
-	},
-	{
-		.gpio = SHOOTER_GPIO_KEY_VOL_UP,
+		.gpio = PM8058_GPIO_PM_TO_SYS(SHOOTER_VOL_UP),
 		.code = KEY_VOLUMEUP,
 	},
 	{
-		.gpio = SHOOTER_GPIO_KEY_VOL_DOWN,
+		.gpio = PM8058_GPIO_PM_TO_SYS(SHOOTER_VOL_DN),
 		.code = KEY_VOLUMEDOWN,
-	 },
+	},
 };
-
-static void shooter_setup_input_gpio(void)
-{
-	uint32_t inputs_gpio_table[] = {
-		GPIO_CFG(SHOOTER_GPIO_KEY_POWER, 0, GPIO_CFG_INPUT,
-			GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
-		GPIO_CFG(SHOOTER_GPIO_KEY_VOL_UP, 0, GPIO_CFG_INPUT,
-			GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
-		GPIO_CFG(SHOOTER_GPIO_KEY_VOL_DOWN, 0, GPIO_CFG_INPUT,
-			GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
-	};
-
-	config_gpio_table(inputs_gpio_table, ARRAY_SIZE(inputs_gpio_table));
-}
 
 static struct gpio_event_input_info shooter_keypad_input_info = {
 	.info.func = gpio_event_input_func,
 	.flags = GPIOEDF_PRINT_KEYS,
 	.type = EV_KEY,
 #if BITS_PER_LONG != 64 && !defined(CONFIG_KTIME_SCALAR)
-	.debounce_time.tv.nsec = 20 * NSEC_PER_MSEC,
+	.debounce_time.tv.nsec = 5 * NSEC_PER_MSEC,
 # else
-	.debounce_time.tv64 = 20 * NSEC_PER_MSEC,
+	.debounce_time.tv64 = 5 * NSEC_PER_MSEC,
 # endif
 	.keymap = shooter_keypad_input_map,
 	.keymap_size = ARRAY_SIZE(shooter_keypad_input_map),
-	.setup_input_gpio = shooter_setup_input_gpio,
 };
 
 static struct gpio_event_info *shooter_keypad_info[] = {
@@ -92,10 +76,7 @@ static struct gpio_event_info *shooter_keypad_info[] = {
 };
 
 static struct gpio_event_platform_data shooter_keypad_data = {
-	.names = {
-		"shooter-keypad",
-		NULL,
-	},
+	.name = "shooter-keypad",
 	.info = shooter_keypad_info,
 	.info_count = ARRAY_SIZE(shooter_keypad_info),
 };
@@ -107,7 +88,16 @@ static struct platform_device shooter_keypad_input_device = {
 		.platform_data	= &shooter_keypad_data,
 	},
 };
+
+/*
+static int shooter_reset_keys_up[] = {
+	KEY_VOLUMEUP,
+	0
+};
+*/
+
 static struct keyreset_platform_data shooter_reset_keys_pdata = {
+	/* .keys_up = shooter_reset_keys_up, */
 	.keys_down = {
 		KEY_POWER,
 		KEY_VOLUMEDOWN,

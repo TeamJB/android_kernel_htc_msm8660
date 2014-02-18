@@ -1,5 +1,5 @@
 # msm8x60
-obj-$(CONFIG_MACH_SHOOTER) += shooter-panel.o
+obj-$(CONFIG_MACH_SHOOTER) += mipi_shooter.o mipi_shooter_cmd_qhd_pt.o board-shooter-panel.o
 obj-$(CONFIG_MACH_SHOOTER_U) += shooter_u-panel.o
 obj-$(CONFIG_MACH_SHOOTER_K) += shooter_k-panel.o
 obj-$(CONFIG_MACH_SHOOTER_CT) += shooter_ct-panel.o

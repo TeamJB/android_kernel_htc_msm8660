@@ -372,6 +372,8 @@ obj-$(CONFIG_MACH_SHOOTER) += htc_bdaddress.o board-shooter-rfkill.o
 obj-$(CONFIG_MACH_SHOOTER) += board-shooter-mmc.o board-shooter-wifi.o htc_wifi_nvs.o
 obj-$(CONFIG_MACH_SHOOTER) += htc_util.o
 obj-$(CONFIG_MACH_SHOOTER) += board-shooter-audio.o
+obj-$(CONFIG_MACH_SHOOTER) += board-shooter-storage.o board-shooter-regulator.o
+obj-$(CONFIG_MACH_SHOOTER) += board-shooter-pmic.o
 
 obj-$(CONFIG_MACH_SHOOTER_U) += board-shooter_u.o
 obj-$(CONFIG_MACH_SHOOTER_U) += board-shooter_u-keypad.o
